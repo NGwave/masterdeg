@@ -1,3 +1,5 @@
 ﻿  Source.cpp
-  md.vcxproj -> C:\Users\Adminco\Documents\Visual Studio 2015\Projects\md\x64\Debug\md.exe
-  md.vcxproj -> C:\Users\Adminco\Documents\Visual Studio 2015\Projects\md\x64\Debug\md.pdb (Full PDB)
+c:\users\adminco\documents\visual studio 2015\projects\md\md\source.cpp(42): warning C4101: ch1: неиспользованная локальная переменная
+c:\users\adminco\documents\visual studio 2015\projects\md\md\source.cpp(33): warning C4101: match_method: неиспользованная локальная переменная
+  md.vcxproj -> C:\Users\Adminco\documents\visual studio 2015\Projects\md\x64\Debug\md.exe
+  md.vcxproj -> C:\Users\Adminco\documents\visual studio 2015\Projects\md\x64\Debug\md.pdb (Full PDB)
