@@ -1,5 +1,8 @@
 ﻿  Source.cpp
-c:\users\adminco\documents\visual studio 2015\projects\md\md\source.cpp(42): warning C4101: ch1: неиспользованная локальная переменная
-c:\users\adminco\documents\visual studio 2015\projects\md\md\source.cpp(33): warning C4101: match_method: неиспользованная локальная переменная
+c:\users\adminco\documents\visual studio 2015\projects\md\md\source.cpp(90): warning C4244: инициализация: преобразование "float" в "int", возможна потеря данных
+c:\users\adminco\documents\visual studio 2015\projects\md\md\source.cpp(91): warning C4244: инициализация: преобразование "float" в "int", возможна потеря данных
+c:\users\adminco\documents\visual studio 2015\projects\md\md\source.cpp(92): warning C4244: инициализация: преобразование "float" в "int", возможна потеря данных
+c:\users\adminco\documents\visual studio 2015\projects\md\md\source.cpp(93): warning C4244: инициализация: преобразование "float" в "int", возможна потеря данных
+c:\users\adminco\documents\visual studio 2015\projects\md\md\source.cpp(43): warning C4101: ch1: неиспользованная локальная переменная
   md.vcxproj -> C:\Users\Adminco\documents\visual studio 2015\Projects\md\x64\Debug\md.exe
   md.vcxproj -> C:\Users\Adminco\documents\visual studio 2015\Projects\md\x64\Debug\md.pdb (Full PDB)
