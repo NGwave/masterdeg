@@ -54,7 +54,8 @@ bool BelongsTo(RotatedRect r, Point2f P)
 	float PCPD = (PC.x*PD.y - PC.y*PD.x);
 	float PDPA = (PD.x*PA.y - PD.y*PA.x);
 
-	if (signbit(PAPB) == signbit(PBPC) == signbit(PCPD) == signbit(PDPA))
+//	if (signbit(PAPB) == signbit(PBPC) == signbit(PCPD) == signbit(PDPA)) //bug is here
+		if ((signbit(PAPB)&&signbit(PBPC)&&signbit(PCPD)&&signbit(PDPA))|| (!signbit(PAPB) && !signbit(PBPC) && !signbit(PCPD) && !signbit(PDPA)))
 		return true;
 	else
 		return false;
@@ -73,8 +74,8 @@ int main(int argc, char** argv)
 	Mat img; Mat templ; Mat result;
 	char* image_window = "Source Image";
 	char* result_window = "Result window";
-	string path = "D:\\testimages\\new\\ipm_2.jpg";
-	string templpath = "D:\\testimages\\new\\shablon_2.jpg";
+	string path = "D:\\testimages\\new\\ipm_10.jpg";
+	string templpath = "D:\\testimages\\new\\shablon_x.jpg";
 	img = imread(path);
 	templ = imread(templpath);
 
@@ -84,7 +85,7 @@ int main(int argc, char** argv)
 	/// Create windows
 	namedWindow(image_window, CV_WINDOW_AUTOSIZE);
 //	namedWindow(result_window, CV_WINDOW_AUTOSIZE);
-	
+	GaussianBlur(img, img, cv::Size(3, 3), 0); //for better work of Canny
 	matchTemplate(img, templ, img, TM_CCOEFF); //the most suitable method
 	normalize(img, img, 0, 1, NORM_MINMAX, -1, Mat());
 	double minVal, maxVal;
@@ -124,7 +125,7 @@ int main(int argc, char** argv)
 
 for (int i = 0; i < contours.size(); i++)
 	{
-	if((contourArea(contours[i]) > max(image.rows,image.cols)) && (contours[i].size()>4)&& arcLength(contours[i],1)>max(image.rows, image.cols)/2) //temporary fix for a strange bug
+	if((contourArea(contours[i]) > max(image.rows,image.cols)) && (contours[i].size()>4)&& arcLength(contours[i],1)>max(image.rows, image.cols)) //THIS NEEDS TO BE FIXED
 		{
 			RotatedRect r = minAreaRect(contours[i]);
 			rectangles.push_back(r);
@@ -166,11 +167,15 @@ for (int i = 0; i < contours.size(); i++)
 		k = 1;
 		double min = rails[i][0].x;
 		double max = rails[i][rails[i].size() - 1].x;
-		double step = (max - min) / 25;
+		double step = (max - min) / 30;
+		//redo when awake
+		float first_x = rails[i][0].x + rails[i][1].x + rails[i][2].x+rails[i][3].x+ rails[i][4].x + rails[i][5].x + rails[i][6].x + rails[i][7].x;
+		float first_y = rails[i][0].y + rails[i][1].y + rails[i][2].y+rails[i][3].y+ rails[i][4].x + rails[i][5].x + rails[i][6].x + rails[i][7].x;
+		rails_short[i].push_back(Point2f(first_x / 4, first_y / 4));
 			for (int j = 0; j < rails[i].size(); j++)
 		{
 
-		     if (rails[i][j].x <= min+step*k)
+		     if (rails[i][j].x <= min+step*k) 
 			 {
 				 sum_x += rails[i][j].x;
 				 sum_y += rails[i][j].y;
@@ -180,11 +185,16 @@ for (int i = 0; i < contours.size(); i++)
 			 {
 				 if (m != 0)
 				 {
-					 rails_short[i].push_back(Point2i(sum_x / m, sum_y / m));
-					 image.at<uchar>(sum_y / m, sum_x / m) = 70;
-					 imshow(result_window, image);
-			     	 waitKey(0);
-					 dotsforone++;
+					 Point2f p(sum_x / m, sum_y / m);
+					
+ 					 if (BelongsTo(rectangles[i], p))
+					 {
+						 rails_short[i].push_back(Point2f(sum_x / m, sum_y / m));
+					//	 image.at<uchar>(sum_y / m, sum_x / m) = 255;
+				    //     imshow(result_window, image);
+					//	 waitKey(0);
+
+					}
 					 m = 0;
 					 sum_x = 0;
 					 sum_y = 0;
@@ -193,13 +203,17 @@ for (int i = 0; i < contours.size(); i++)
 				
 			 }
 		}
-			dotsforone = 0;
-    }
+   }
 	
 //	Mat middles(image.rows,image.cols,image.type);
 
-//	cout << "runtime = " << clock() / 1000.0 << endl;*/
+//	cout << "runtime = " << clock() / 1000.0 << endl;
+
+	for (int i = 0; i < rails_short.size(); i++)
+		for (int j = 1; j < rails_short[i].size(); j++)
+			line(oldimg, rails_short[i][j - 1], rails_short[i][j], (255, 0, 255), 2, 8);
 	imshow(image_window, oldimg); 
+
 
 	imshow(result_window, image);
 
