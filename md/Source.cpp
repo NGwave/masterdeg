@@ -74,18 +74,22 @@ int main(int argc, char** argv)
 	Mat img; Mat templ; Mat result;
 	char* image_window = "Source Image";
 	char* result_window = "Result window";
-	string path = "D:\\testimages\\new\\ipm_10.jpg";
-	string templpath = "D:\\testimages\\new\\shablon_x.jpg";
+	string path = "D:\\testimages\\new\\forw_2.jpg";
+	string templpath; 
+	
+	char* perspective = "np";
+	if (perspective =="ipm")	
+		templpath = "D:\\testimages\\new\\shablon_x.jpg";
+	if (perspective == "np")
+		templpath = "D:\\testimages\\new\\shablon_f2.jpg";
 	img = imread(path);
 	templ = imread(templpath);
-
-		
 	Mat oldimg = img;
 	int ch1;
 	/// Create windows
 	namedWindow(image_window, CV_WINDOW_AUTOSIZE);
-//	namedWindow(result_window, CV_WINDOW_AUTOSIZE);
-	GaussianBlur(img, img, cv::Size(3, 3), 0); //for better work of Canny
+	//namedWindow(result_window, CV_WINDOW_AUTOSIZE);
+	GaussianBlur(img, img, cv::Size(5, 5), 0); //for better work of Canny
 	matchTemplate(img, templ, img, TM_CCOEFF); //the most suitable method
 	normalize(img, img, 0, 1, NORM_MINMAX, -1, Mat());
 	double minVal, maxVal;
@@ -93,20 +97,26 @@ int main(int argc, char** argv)
 	Mat  draw, image;
 	img.convertTo(image, CV_8U, 255.0 / (maxVal - minVal), -255.0*minVal/(maxVal-minVal));
 	vector <Point2f> railpoints; 
-	
-	Canny(image, image, 100, 500);
-	Mat blurred;
+	if (perspective == "ipm")
+	Canny(image, image, 200, 600);//for ipm only!
+     Mat blurred;
 	GaussianBlur(image, image, cv::Size(11, 11), 5);
 	GaussianBlur(image, blurred, cv::Size(11, 11), 3);
 	addWeighted(image, 3, blurred, -1, 0,image);
-
-
 	copyMakeBorder(image, image, templ.rows / 2, templ.rows / 2, templ.cols / 2, templ.cols / 2, BORDER_CONSTANT, 0);
-	bitwise_not(image, image);
-     minMaxLoc(image, &minVal, &maxVal);
-  threshold(image, image, maxVal*(1-minVal/maxVal), 255, THRESH_BINARY);
-
-  for (int i = 1; i < image.cols; i++)
+	if (perspective == "ipm")
+	{
+		bitwise_not(image, image);
+		minMaxLoc(image, &minVal, &maxVal);
+		threshold(image, image, maxVal*(1 - minVal / maxVal), 255, THRESH_BINARY);
+	}
+    if (perspective == "np")
+	{
+		threshold(image, image, 254, 255, THRESH_BINARY);
+		bitwise_not(image, image);
+	}
+	
+ for (int i = 1; i < image.cols; i++)
 	  for (int j = 1; j < image.rows; j++)
 		  if (image.at<uchar>(j,i) <255)
 		  {
@@ -125,26 +135,19 @@ int main(int argc, char** argv)
 
 for (int i = 0; i < contours.size(); i++)
 	{
-	if((contourArea(contours[i]) > max(image.rows,image.cols)) && (contours[i].size()>4)&& arcLength(contours[i],1)>max(image.rows, image.cols)) //THIS NEEDS TO BE FIXED
-		{
-			RotatedRect r = minAreaRect(contours[i]);
+	RotatedRect r = minAreaRect(contours[i]);
+	Point2f rect_points[4];
+	r.points(rect_points);
+	  
+	
+	if((contourArea(contours[i]) > max(image.rows,image.cols)*4) && (contours[i].size()>4)&& arcLength(contours[i],1)>min(image.rows, image.cols)) //THIS NEEDS TO BE FIXED
+     	{
 			rectangles.push_back(r);
-			Point2f rect_points[4]; 
-			r.points(rect_points);
 			for (int j = 0; j < 4; j++)
 			{
 				line(image, rect_points[j], rect_points[(j + 1) % 4], (0, 0, 0), 1, 8);
 			}
-			//this is for lines
-		/*	fitLine(Mat(contours[i]), lin, CV_DIST_L2,0,0.01,0.01);
-			lines.push_back(lin);
-			int x0 = lin[2] - oldimg.cols*lin[0];        // a point on the line
-			int y0 = lin[3] - oldimg.cols*lin[1];
-			int x1 = x0 + 2*oldimg.cols * lin[0]; // add a vector of length 100
-			int y1 = y0 + 2*oldimg.cols * lin[1]; // using the unit vector
-
-			line(oldimg, cv::Point(x0, y0), cv::Point(x1, y1), (0,0,255), 1); // color and thickness*/
-			
+					
 		}
 	}
 	vector<vector<Point2f>> rails(rectangles.size());
@@ -169,9 +172,9 @@ for (int i = 0; i < contours.size(); i++)
 		double max = rails[i][rails[i].size() - 1].x;
 		double step = (max - min) / 30;
 		//redo when awake
-		float first_x = rails[i][0].x + rails[i][1].x + rails[i][2].x+rails[i][3].x+ rails[i][4].x + rails[i][5].x + rails[i][6].x + rails[i][7].x;
-		float first_y = rails[i][0].y + rails[i][1].y + rails[i][2].y+rails[i][3].y+ rails[i][4].x + rails[i][5].x + rails[i][6].x + rails[i][7].x;
-		rails_short[i].push_back(Point2f(first_x / 4, first_y / 4));
+	//	float first_x = rails[i][0].x + rails[i][1].x + rails[i][2].x+rails[i][3].x+ rails[i][4].x + rails[i][5].x + rails[i][6].x + rails[i][7].x;
+	//	float first_y = rails[i][0].y + rails[i][1].y + rails[i][2].y+rails[i][3].y+ rails[i][4].x + rails[i][5].x + rails[i][6].x + rails[i][7].x;
+	//	rails_short[i].push_back(Point2f(first_x / 4, first_y / 4));
 			for (int j = 0; j < rails[i].size(); j++)
 		{
 
@@ -190,8 +193,8 @@ for (int i = 0; i < contours.size(); i++)
  					 if (BelongsTo(rectangles[i], p))
 					 {
 						 rails_short[i].push_back(Point2f(sum_x / m, sum_y / m));
-					//	 image.at<uchar>(sum_y / m, sum_x / m) = 255;
-				    //     imshow(result_window, image);
+						 image.at<uchar>(sum_y / m, sum_x / m) = 255;
+				    //    imshow(result_window, image);
 					//	 waitKey(0);
 
 					}
@@ -205,13 +208,15 @@ for (int i = 0; i < contours.size(); i++)
 		}
    }
 	
-//	Mat middles(image.rows,image.cols,image.type);
-
 //	cout << "runtime = " << clock() / 1000.0 << endl;
 
 	for (int i = 0; i < rails_short.size(); i++)
 		for (int j = 1; j < rails_short[i].size(); j++)
+		{
 			line(oldimg, rails_short[i][j - 1], rails_short[i][j], (255, 0, 255), 2, 8);
+	//		imshow(image_window, oldimg);
+	//		waitKey(0);
+		}
 	imshow(image_window, oldimg); 
 
 
@@ -222,4 +227,5 @@ for (int i = 0; i < contours.size(); i++)
 	
 	return 0;
 }
+
 
