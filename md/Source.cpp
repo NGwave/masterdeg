@@ -2,6 +2,7 @@
 #include "opencv2/imgproc/imgproc.hpp"
 #include "opencv2\features2d.hpp"
 #include <math.h>
+#include <chrono>
 
 #include <iostream>
 #include <stdio.h>
@@ -17,32 +18,36 @@
 #define WHITE 200
 
 using namespace std;
+using namespace std::chrono;
 using namespace cv;
-//вообще ненужная функция
-/*
-Mat rotate(Mat src, double angle)
-{
-	Mat dst;
-	double c = cos(angle);
-	double s = sin(angle);
-	Point2f pt(src.cols / 2., src.rows / 2.);
-	Mat r = getRotationMatrix2D(pt, -angle, 1.0);
-	int nW = int((src.cols * s) + (src.rows * c));
-		int	nH = int((src.cols * c) + (src.rows * s));
-		r.at<float>(0,2) += (nW / 2) - src.cols / 2;
-		r.at<float>(1,2) += (nH / 2) - src.rows / 2;
 
-	warpAffine(src, dst, r, Size(src.cols, src.rows));
-	return dst;
-}*/
-bool BelongsTo(RotatedRect r, Point2f P)
+struct NGrect {
+	Point2f points[4];
+	double side1; 
+	double side2; 
+	double length;
+	double width;
+	NGrect(Point2f p[4])
+	{
+		points[0] = p[0];
+		points[1] = p[1];
+		points[2] = p[2];
+		points[3] = p[3];
+		side1 = sqrt((points[1].x - points[2].x)*(points[1].x - points[2].x) + (points[1].y - points[2].y)*(points[1].y - points[2].y));
+		side2 = sqrt((points[2].x - points[3].x)*(points[2].x - points[3].x) + (points[2].y - points[3].y)*(points[2].y - points[3].y));
+		length = max(side1, side2);
+		width = min(side1, side2);
+
+	}
+};
+
+bool BelongsTo(NGrect r, Point2f P)
 {
-	Point2f rpoints[4];
-	r.points(rpoints);
-	Point2f A = rpoints[0];
-	Point2f B = rpoints[1];
-	Point2f C = rpoints[2];
-	Point2f D = rpoints[3];
+	
+	Point2f A = r.points[0];
+	Point2f B = r.points[1];
+	Point2f C = r.points[2];
+	Point2f D = r.points[3];
 
 	Point2f PA(A.x - P.x, A.y - P.y);
 	Point2f PB(B.x - P.x, B.y - P.y);
@@ -67,160 +72,193 @@ bool BelongsTo(RotatedRect r, Point2f P)
 /** @function main */
 int main(int argc, char** argv)
 {
-	
+
 
 	//img = imread(argv[1], 1
 	//templ = imread(argv[2], 1);
 	Mat img; Mat templ; Mat result;
 	char* image_window = "Source Image";
 	char* result_window = "Result window";
-	string path = "D:\\testimages\\new\\forw_2.jpg";
-	string templpath; 
+	string path = "D:\\testimages\\new\\ipm_3.jpg";
+	string templpath;
+	high_resolution_clock::time_point t1 = high_resolution_clock::now();
 	
-	char* perspective = "np";
-	if (perspective =="ipm")	
-		templpath = "D:\\testimages\\new\\shablon_x.jpg";
+	string perspective = "ipm";
 	if (perspective == "np")
-		templpath = "D:\\testimages\\new\\shablon_f2.jpg";
-	img = imread(path);
-	templ = imread(templpath);
-	Mat oldimg = img;
+		templpath = "D:\\testimages\\new\\thick_sh.jpg";
+	if (perspective == "ipm")
+		templpath = "D:\\testimages\\new\\thin_sh.jpg";
+	string contrast = "low";
+	
+	
 	int ch1;
-	/// Create windows
+
+	//for (int cyclop = 0; cyclop < 10000; cyclop++)
+	//{
+		img = imread(path);
+		Mat oldimg = img;
+		templ = imread(templpath);
+		
+		/// Create windows
 	namedWindow(image_window, CV_WINDOW_AUTOSIZE);
-	//namedWindow(result_window, CV_WINDOW_AUTOSIZE);
-	GaussianBlur(img, img, cv::Size(5, 5), 0); //for better work of Canny
-	matchTemplate(img, templ, img, TM_CCOEFF); //the most suitable method
-	normalize(img, img, 0, 1, NORM_MINMAX, -1, Mat());
-	double minVal, maxVal;
-	minMaxLoc(img, &minVal, &maxVal);  //find  minimum  and  maximum  intensities
-	Mat  draw, image;
-	img.convertTo(image, CV_8U, 255.0 / (maxVal - minVal), -255.0*minVal/(maxVal-minVal));
-	vector <Point2f> railpoints; 
-	if (perspective == "ipm")
-	Canny(image, image, 200, 600);//for ipm only!
-     Mat blurred;
-	GaussianBlur(image, image, cv::Size(11, 11), 5);
-	GaussianBlur(image, blurred, cv::Size(11, 11), 3);
-	addWeighted(image, 3, blurred, -1, 0,image);
-	copyMakeBorder(image, image, templ.rows / 2, templ.rows / 2, templ.cols / 2, templ.cols / 2, BORDER_CONSTANT, 0);
-	if (perspective == "ipm")
-	{
-		bitwise_not(image, image);
+		//namedWindow(result_window, CV_WINDOW_AUTOSIZE);
+
+
+		matchTemplate(img, templ, img, TM_CCOEFF); //the most suitable method
+		normalize(img, img, 0, 1, NORM_MINMAX, -1, Mat());
+		double minVal, maxVal;
+		minMaxLoc(img, &minVal, &maxVal);
+		Mat  draw, image;
+		img.convertTo(image, CV_8U, 255.0 / (maxVal - minVal), -255.0*minVal / (maxVal - minVal));
+		vector <Point2f> railpoints;
+		double alpha = 0;
+		if (contrast == "low")
+		{
+			Canny(image, image, 100, 400);
+			bitwise_not(image, image);
+			alpha = 2.2;//2.2!!!!!
+		}
+		if (contrast == "high")
+		{
+			alpha = 3;
+		}
+		Mat blurred;
+		GaussianBlur(image, image, cv::Size(11, 11), 5);
+		GaussianBlur(image, blurred, cv::Size(11, 11), 3);
+
+		addWeighted(image, alpha, blurred, -1, 0, image);
 		minMaxLoc(image, &minVal, &maxVal);
-		threshold(image, image, maxVal*(1 - minVal / maxVal), 255, THRESH_BINARY);
-	}
-    if (perspective == "np")
-	{
-		threshold(image, image, 254, 255, THRESH_BINARY);
-		bitwise_not(image, image);
-	}
-	
- for (int i = 1; i < image.cols; i++)
-	  for (int j = 1; j < image.rows; j++)
-		  if (image.at<uchar>(j,i) <255)
-		  {
-			  railpoints.push_back(Point(i,j));
-		  }
+
+		if (contrast == "low")
+			threshold(image, image, 254, 255, THRESH_BINARY);
+		if (contrast == "high")
+			threshold(image, image, minVal + (maxVal - minVal) / 1.5, 255, THRESH_BINARY);
+
+		copyMakeBorder(image, image, templ.rows / 2, templ.rows / 2, templ.cols / 2, templ.cols / 2, BORDER_CONSTANT, 255);
+
+		for (int i = 1; i < image.rows; i++)
+			for (int j = 1; j < image.cols; j++)
+				if (image.at<uchar>(i, j) < 255)
+				{
+					railpoints.push_back(Point(j, i));
+				}
 
 
-   vector<vector<Point>> contours;
-	vector<Vec4i> hierarchy;
+		vector<vector<Point>> contours;
+		vector<Vec4i> hierarchy;
 
-	findContours(image, contours, hierarchy, CV_RETR_TREE, CV_CHAIN_APPROX_SIMPLE, Point(0, 0));
+		findContours(image, contours, hierarchy, CV_RETR_TREE, CV_CHAIN_APPROX_SIMPLE, Point(0, 0));
 
-	vector<Vec4f> lines;
-	vector<RotatedRect> rectangles;
-	Vec4f lin;
+		vector<Vec4f> lines;
+		vector<NGrect> rectangles;
+		vector<NGrect> railsrects;
+		Vec4f lin;
+		double maxlength = 0;
+		for (int i = 0; i < contours.size(); i++)
+		{
+			RotatedRect r = minAreaRect(contours[i]);
+		//	rectangles.push_back(r);
+			Point2f rect_points[4];
+			r.points(rect_points);
+			NGrect rect(rect_points);
+			rectangles.push_back(rect);
+		}
+		for (int i = 0; i < rectangles.size(); i++)
+		{
+			if ((rectangles[i].length > maxlength) && (rectangles[i].width!= image.cols))
+			         	maxlength = rectangles[i].length;
+			
+		}
 
-for (int i = 0; i < contours.size(); i++)
-	{
-	RotatedRect r = minAreaRect(contours[i]);
-	Point2f rect_points[4];
-	r.points(rect_points);
-	  
-	
-	if((contourArea(contours[i]) > max(image.rows,image.cols)*4) && (contours[i].size()>4)&& arcLength(contours[i],1)>min(image.rows, image.cols)) //THIS NEEDS TO BE FIXED
-     	{
-			rectangles.push_back(r);
-			for (int j = 0; j < 4; j++)
+ 		for (int i = 0; i < rectangles.size(); i++)
+		{
+			//здесь какой-то кривой-кривой отсев по площади.
+			if (rectangles[i].length >= 0.55*maxlength && rectangles[i].length>=15*rectangles[i].width) //THIS NEEDS TO BE FIXED
 			{
-				line(image, rect_points[j], rect_points[(j + 1) % 4], (0, 0, 0), 1, 8);
+			for (int j = 0; j < 4; j++)
+				{
+					line(image, rectangles[i].points[j], rectangles[i].points[(j + 1) % 4], (0, 0, 0), 1, 8);
+				}
+				railsrects.push_back(rectangles[i]);
 			}
-					
 		}
-	}
-	vector<vector<Point2f>> rails(rectangles.size());
-	vector<vector<Point2i>> rails_short(rectangles.size());
-	//more advanced method
-	for (int i = 0; i<railpoints.size(); i++)
-	   for (int j = 0; j<rectangles.size();j++)
-		if (BelongsTo(rectangles[j], railpoints[i]))
-		{
-			rails[j].push_back(railpoints[i]);
-			break;
-		}
-	float sum_x = 0, sum_y =0;
-	int k=0;
-	int m=0;
-	int dotsforone = 0;
+		vector<vector<Point2f>> rails(railsrects.size());
+		vector<vector<Point2i>> rails_short(railsrects.size());
+		//more advanced method
+		for (int i = 0; i < railpoints.size(); i++)
+			for (int j = 0; j < railsrects.size(); j++)
+				if (BelongsTo(railsrects[j], railpoints[i]))
+				{
+					rails[j].push_back(railpoints[i]);
+					break;
+				}
+		float sum_x = 0, sum_y = 0;
+		int k = 0;
+		int m = 0;
 
-	for (int i = 0; i < rails.size(); i++)
-	{
-		k = 1;
-		double min = rails[i][0].x;
-		double max = rails[i][rails[i].size() - 1].x;
-		double step = (max - min) / 30;
-		//redo when awake
-	//	float first_x = rails[i][0].x + rails[i][1].x + rails[i][2].x+rails[i][3].x+ rails[i][4].x + rails[i][5].x + rails[i][6].x + rails[i][7].x;
-	//	float first_y = rails[i][0].y + rails[i][1].y + rails[i][2].y+rails[i][3].y+ rails[i][4].x + rails[i][5].x + rails[i][6].x + rails[i][7].x;
-	//	rails_short[i].push_back(Point2f(first_x / 4, first_y / 4));
+		for (int i = 0; i < rails.size(); i++)
+		{
+			k = 1;
+			m = 0;
+			double min = rails[i][0].y;
+			double max = rails[i][rails[i].size() - 1].y;
+			double step = (max - min) / 10;
+			rails_short[i].push_back(Point2i((rails[i][0].x + rails[i][20].x) / 2, rails[i][0].y));
 			for (int j = 0; j < rails[i].size(); j++)
-		{
+			{
 
-		     if (rails[i][j].x <= min+step*k) 
-			 {
-				 sum_x += rails[i][j].x;
-				 sum_y += rails[i][j].y;
-				 m++;
-			 }
-			 else
-			 {
-				 if (m != 0)
-				 {
-					 Point2f p(sum_x / m, sum_y / m);
-					
- 					 if (BelongsTo(rectangles[i], p))
-					 {
-						 rails_short[i].push_back(Point2f(sum_x / m, sum_y / m));
-						 image.at<uchar>(sum_y / m, sum_x / m) = 255;
-				    //    imshow(result_window, image);
-					//	 waitKey(0);
+				if (rails[i][j].y <= min + step*k)
+				{
+					sum_x += rails[i][j].x;
+					sum_y += rails[i][j].y;
+					m++;
+				}
+				else
+				{
+					if (m != 0)
+					{
+						Point2d p(sum_x / m, sum_y / m);
 
+						if (BelongsTo(railsrects[i], p))
+						{
+							rails_short[i].push_back(Point2i(sum_x / m, sum_y / m));
+							circle(image, Point2i(sum_x / m, sum_y / m), 2, 250, 1);
+							//	imshow(image_window, image);
+							//	waitKey(0);
+
+
+						}
+						m = 0;
+						sum_x = 0;
+						sum_y = 0;
 					}
-					 m = 0;
-					 sum_x = 0;
-					 sum_y = 0;
-				 }
-					 k++;
-				
-			 }
+					k++;
+
+				}
+			}
+			rails_short[i].push_back(Point2i((rails[i][rails[i].size() - 1].x + rails[i][rails[i].size() - 19].x) / 2, rails[i][rails[i].size() - 1].y));
 		}
-   }
+
+
+
+		for (int i = 0; i < rails_short.size(); i++)
+			for (int j = 1; j < rails_short[i].size(); j++)
+			{
+				line(oldimg, rails_short[i][j - 1], rails_short[i][j], (255, 0, 255), 2, 8);
+				//	imshow(image_window, oldimg);
+				//	waitKey(0);
+			}
+			//*/
+	//}
+	high_resolution_clock::time_point t2 = high_resolution_clock::now();
+
+	auto duration = duration_cast<milliseconds>(t2 - t1).count()/10000;
+
+	cout << duration;
+
 	
-//	cout << "runtime = " << clock() / 1000.0 << endl;
-
-	for (int i = 0; i < rails_short.size(); i++)
-		for (int j = 1; j < rails_short[i].size(); j++)
-		{
-			line(oldimg, rails_short[i][j - 1], rails_short[i][j], (255, 0, 255), 2, 8);
-	//		imshow(image_window, oldimg);
-	//		waitKey(0);
-		}
 	imshow(image_window, oldimg); 
-
-
-	imshow(result_window, image);
+   imshow(result_window, image);
 
 	
 	waitKey(0);

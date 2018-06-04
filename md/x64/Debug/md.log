@@ -1,8 +1,9 @@
 ﻿  Source.cpp
-c:\users\adminco\documents\visual studio 2015\projects\md\md\source.cpp(196): warning C4244: аргумент: преобразование "float" в "int", возможна потеря данных
-c:\users\adminco\documents\visual studio 2015\projects\md\md\source.cpp(88): warning C4101: ch1: неиспользованная локальная переменная
-  Создание кода...
-  Пропуск... (изменения не обнаружены)
-  NormalPerspective.cpp
+c:\users\adminco\documents\visual studio 2015\projects\md\md\source.cpp(139): warning C4267: =: преобразование из "size_t" в "int"; возможна потеря данных
+c:\users\adminco\documents\visual studio 2015\projects\md\md\source.cpp(180): warning C4244: аргумент: преобразование "float" в "int", возможна потеря данных
+c:\users\adminco\documents\visual studio 2015\projects\md\md\source.cpp(198): warning C4244: аргумент: преобразование "float" в "int", возможна потеря данных
+c:\users\adminco\documents\visual studio 2015\projects\md\md\source.cpp(199): warning C4244: аргумент: преобразование "float" в "int", возможна потеря данных
+c:\users\adminco\documents\visual studio 2015\projects\md\md\source.cpp(213): warning C4244: аргумент: преобразование "float" в "int", возможна потеря данных
+c:\users\adminco\documents\visual studio 2015\projects\md\md\source.cpp(77): warning C4101: ch1: неиспользованная локальная переменная
   md.vcxproj -> C:\Users\Adminco\documents\visual studio 2015\Projects\md\x64\Debug\md.exe
   md.vcxproj -> C:\Users\Adminco\documents\visual studio 2015\Projects\md\x64\Debug\md.pdb (Full PDB)

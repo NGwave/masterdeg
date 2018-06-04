@@ -18,8 +18,5 @@
     <ClCompile Include="Source.cpp">
       <Filter>Файлы исходного кода</Filter>
     </ClCompile>
-    <ClCompile Include="NormalPerspective.cpp">
-      <Filter>Файлы исходного кода</Filter>
-    </ClCompile>
   </ItemGroup>
 </Project>
