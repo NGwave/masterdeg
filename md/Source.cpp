@@ -10,12 +10,13 @@
 
 #define SIGMA 5
 #define KERNEL 11
-#define TRESH_MIN 100
-#define TRESH_MAX 500
+#define THRESH_MIN 100
+#define THRESH_MAX 400
 #define ALPHA 2
 #define BETA -1
 #define GAMMA 0
-#define WHITE 200
+#define WHITE 254
+#define INDEX 0.54
 
 using namespace std;
 using namespace std::chrono;
@@ -79,7 +80,7 @@ int main(int argc, char** argv)
 	Mat img; Mat templ; Mat result;
 	char* image_window = "Source Image";
 	char* result_window = "Result window";
-	string path = "D:\\testimages\\new\\ipm_3.jpg";
+	string path = "D:\\testimages\\new\\ipm_1.jpg";
 	string templpath;
 	high_resolution_clock::time_point t1 = high_resolution_clock::now();
 	
@@ -114,7 +115,7 @@ int main(int argc, char** argv)
 		double alpha = 0;
 		if (contrast == "low")
 		{
-			Canny(image, image, 100, 400);
+			Canny(image, image, THRESH_MAX, THRESH_MIN);
 			bitwise_not(image, image);
 			alpha = 2.2;//2.2!!!!!
 		}
@@ -123,14 +124,14 @@ int main(int argc, char** argv)
 			alpha = 3;
 		}
 		Mat blurred;
-		GaussianBlur(image, image, cv::Size(11, 11), 5);
-		GaussianBlur(image, blurred, cv::Size(11, 11), 3);
+		GaussianBlur(image, image, cv::Size(KERNEL, KERNEL), SIGMA);
+		GaussianBlur(image, blurred, cv::Size(KERNEL, KERNEL), SIGMA);
 
-		addWeighted(image, alpha, blurred, -1, 0, image);
+		addWeighted(image, alpha, blurred, BETA, GAMMA, image);
 		minMaxLoc(image, &minVal, &maxVal);
 
 		if (contrast == "low")
-			threshold(image, image, 254, 255, THRESH_BINARY);
+			threshold(image, image, WHITE, 255, THRESH_BINARY);
 		if (contrast == "high")
 			threshold(image, image, minVal + (maxVal - minVal) / 1.5, 255, THRESH_BINARY);
 
@@ -154,7 +155,7 @@ int main(int argc, char** argv)
 		vector<NGrect> railsrects;
 		Vec4f lin;
 		double maxlength = 0;
-		for (int i = 0; i < contours.size(); i++)
+		for (int i = 1; i < contours.size(); i++)
 		{
 			RotatedRect r = minAreaRect(contours[i]);
 		//	rectangles.push_back(r);
@@ -168,12 +169,13 @@ int main(int argc, char** argv)
 			if ((rectangles[i].length > maxlength) && (rectangles[i].width!= image.cols))
 			         	maxlength = rectangles[i].length;
 			
+			
 		}
 
  		for (int i = 0; i < rectangles.size(); i++)
 		{
-			//здесь какой-то кривой-кривой отсев по площади.
-			if (rectangles[i].length >= 0.55*maxlength && rectangles[i].length>=15*rectangles[i].width) //THIS NEEDS TO BE FIXED
+			
+			if (rectangles[i].length >= INDEX*maxlength && rectangles[i].length>=rectangles[i].width) 
 			{
 			for (int j = 0; j < 4; j++)
 				{
